@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "semantic-release": "semantic-release",
     "build": "node build.js --test-bundle",
-    "deploy": "node build.js --deploy --test --pkgVersion=v3 --cleanup-patch=1y -l major",
+    "deploy": "node build.js --deploy --cleanup-patch=1y -l major",
     "deploy-test": "hedy -v --deploy --test --pkgVersion=test",
     "deploy-routes": "hedy --no-build --no-hints -l major",
     "deploy-ci": "hedy -v --deploy --test --pkgVersion=ci$CIRCLE_BUILD_NUM -l ci --cleanup-ci=24h",
