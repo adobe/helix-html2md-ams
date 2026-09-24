@@ -15,7 +15,9 @@ import wrap from '@adobe/helix-shared-wrap';
 import { helixStatus } from '@adobe/helix-status';
 import bodyData from '@adobe/helix-shared-body-data';
 import { toSISize } from '@adobe/helix-shared-string';
-import { ConstraintsError, TooManyImagesError, html2md } from '@adobe/helix-html2md';
+import {
+  ConstraintsError, TooManyImagesError, ImageUploadError, html2md, imageFilterFromPrefixes,
+} from '@adobe/helix-html2md';
 import {
   Response,
   h1NoCache,
@@ -23,8 +25,9 @@ import {
   AbortError,
 } from '@adobe/fetch';
 import { cleanupHeaderValue } from '@adobe/helix-shared-utils';
-import { MediaHandler, SizeTooLargeException } from '@adobe/helix-mediahandler';
+import { MediaHandler, SizeTooLargeException, maxSizeMediaFilter } from '@adobe/helix-mediahandler';
 import pkgJson from './package.cjs';
+import { validateSVG } from './validate-svg.js';
 
 /* c8 ignore next 7 */
 export const { fetch } = h1NoCache();
@@ -33,6 +36,8 @@ const gzip = promisify(zlib.gzip);
 
 const DEFAULT_MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20mb
 
+const DEFAULT_MAX_SVG_SIZE = 40 * 1024;
+
 const DEFAULT_MAX_HTML_SIZE = 1024 * 1024; // 1mb
 
 // Bucket name constants (needed for build validation pattern checks)
@@ -40,6 +45,23 @@ const DEFAULT_MAX_HTML_SIZE = 1024 * 1024; // 1mb
 const HELIX_BUCKET_SUFFIX = process.env.HELIX_BUCKET_SUFFIX;
 export const DEFAULT_CONTENT_BUS_BUCKET = `helix-content-bus-${HELIX_BUCKET_SUFFIX}`;
 export const DEFAULT_MEDIA_BUS_BUCKET = `helix-media-bus-${HELIX_BUCKET_SUFFIX}`;
+
+function createUploadErrorMessage(errors) {
+  if (errors.length === 1) {
+    const e = errors[0];
+    if (e.error instanceof SizeTooLargeException) {
+      return `Image ${e.idx} exceeds allowed limit of ${toSISize(e.error.limit)}`;
+    }
+    return `Image ${e.idx} failed validation: ${e.error.message}`;
+  }
+  const errorImages = errors.map(({ idx }) => idx).sort((a, b) => a - b);
+  // eslint-disable-next-line max-len
+  const stlErrors = errors.map(({ error: err }) => err).filter((e) => e?.limit > 0);
+  if (stlErrors.length === errorImages.length) {
+    return `Images ${errorImages.slice(0, -1).join(', ')} and ${errorImages.at(-1)} exceed allowed limit of ${toSISize(stlErrors[0].limit)}`;
+  }
+  return `Images ${errorImages.slice(0, -1).join(', ')} and ${errorImages.at(-1)} have failed validation.`;
+}
 
 /**
  * Generates an error response
@@ -103,6 +125,32 @@ export function createImgSrcPolicy(baseUrlStr, imgSrcPolicy) {
   });
 
   return (url) => imgSrcPolicFilters.some((f) => f(url));
+}
+
+/**
+ * Creates an image filter for excluding external and media images from processing.
+ * @param {string[]} ext lists of external image url prefixes to exclude
+ * @param {string} org org
+ * @param {string} site site
+ * @return {(function(*): (boolean|boolean))|*}
+ */
+export function createImageFilter(ext, org, site) {
+  const baseFilter = imageFilterFromPrefixes(ext);
+  const prevSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_PAGE || 'aem.page'}`;
+  const liveSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_LIVE || 'aem.live'}`;
+  return (href) => {
+    try { // check if url is on the same site
+      const { hostname, pathname } = new URL(href);
+      if (hostname.endsWith(prevSuffix) || hostname.endsWith(liveSuffix)) {
+        if (pathname.split('/').pop().startsWith('media_')) {
+          return false;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return baseFilter(href);
+  };
 }
 
 /**
@@ -181,41 +229,68 @@ async function run(request, ctx) {
     signal.clear();
   }
 
-  // only use media handler when loaded via fstab. otherwise images are not processed.
-  let mediaHandler;
-  if (contentBusId) {
-    const imgSrc = res.headers.get('x-html2md-img-src')?.split(/\s+/) || [];
-    if (imgSrc.indexOf('self') < 0) {
-      imgSrc.push('self');
+  const maxSize = ctx.data.limits?.maxImageSize
+    ? parseInt(ctx.data.limits.maxImageSize, 10)
+    : DEFAULT_MAX_IMAGE_SIZE;
+
+  const maxSVGSize = ctx.data.limits?.maxSVGSize
+    ? parseInt(ctx.data.limits.maxSVGSize, 10)
+    : DEFAULT_MAX_SVG_SIZE;
+
+  const contentFilter = async (blob) => {
+    if (blob.data) {
+      await validateSVG(ctx, blob.data, maxSVGSize);
     }
-    const imgSrcPolicy = createImgSrcPolicy(sourceUrl, imgSrc);
-    const {
-      MEDIAHANDLER_NOCACHHE: noCache,
-      CLOUDFLARE_ACCOUNT_ID: r2AccountId,
-      CLOUDFLARE_R2_ACCESS_KEY_ID: r2AccessKeyId,
-      CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,
-    } = ctx.env;
-    mediaHandler = new MediaHandler({
-      r2AccountId,
-      r2AccessKeyId,
-      r2SecretAccessKey,
-      bucketId: mediaBucket,
-      owner: org,
-      repo: site,
-      ref: 'main',
-      contentBusId,
-      log,
-      auth: (src) => (imgSrcPolicy(src) ? auth : undefined),
-      filter: /* c8 ignore next */ (blob) => ((blob.contentType || '').startsWith('image/')),
-      blobAgent: `html2md-${pkgJson.version}`,
-      noCache,
-      fetchTimeout: 5000, // limit image fetches to 5s
-      forceHttp1: true,
-      maxSize: ctx.data.limits?.maxImageSize
-        ? parseInt(ctx.data.limits.maxImageSize, 10)
-        : DEFAULT_MAX_IMAGE_SIZE,
-    });
+    return true;
+  };
+
+  const sizeFilter = maxSizeMediaFilter(maxSize);
+
+  const resourceFilter = async (blob) => {
+    const ct = blob.contentType /* c8 ignore next */ || '';
+    if (!ct.startsWith('image/')) {
+      return false;
+    }
+    // check size (throws is limit exceeded)
+    await sizeFilter(blob);
+    if (ct.startsWith('image/svg+xml')) {
+      // return the content filter for svg
+      return contentFilter;
+    }
+    return true;
+  };
+
+  const imgSrc = res.headers.get('x-html2md-img-src')?.split(/\s+/) || [];
+  if (imgSrc.indexOf('self') < 0) {
+    imgSrc.push('self');
   }
+  const imgSrcPolicy = createImgSrcPolicy(sourceUrl, imgSrc);
+  const {
+    MEDIAHANDLER_NOCACHE: noCache,
+    MEDIAHANDLER_DISABLE_EXPECT_CONTINUE: disableExpectContinueHeader,
+    CLOUDFLARE_ACCOUNT_ID: r2AccountId,
+    CLOUDFLARE_R2_ACCESS_KEY_ID: r2AccessKeyId,
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: r2SecretAccessKey,
+  } = ctx.env;
+
+  const mediaHandler = new MediaHandler({
+    r2AccountId,
+    r2AccessKeyId,
+    r2SecretAccessKey,
+    bucketId: mediaBucket,
+    owner: org,
+    repo: site,
+    ref: 'main',
+    contentBusId,
+    log,
+    auth: (src) => (imgSrcPolicy(src) ? auth : undefined),
+    filter: resourceFilter,
+    blobAgent: `html2md-${pkgJson.version}`,
+    noCache,
+    fetchTimeout: 5000, // limit image fetches to 5s
+    forceHttp1: true,
+    disableExpectContinueHeader,
+  });
 
   try {
     const md = await html2md(html, {
@@ -225,15 +300,20 @@ async function run(request, ctx) {
       org,
       site,
       unspreadLists: !!ctx.data.features?.unspreadLists,
-      externalImageUrlPrefixes: ctx.data.features?.externalImageUrlPrefixes,
+      imageFilter: createImageFilter(ctx.data.features?.externalImageUrlPrefixes || [], org, site),
       maxImages: ctx.data.limits?.maxImages,
       maxMetadataSize: ctx.data.limits?.maxMetadataSize,
     });
 
-    const zipped = await gzip(md);
+    const responseBody = JSON.stringify({
+      markdown: md,
+      media: mediaHandler.getUploadedImages(),
+    });
+
+    const zipped = await gzip(responseBody);
     const headers = {
-      'content-type': 'text/markdown; charset=utf-8',
-      'content-length': md.length,
+      'content-type': 'application/json; charset=utf-8',
+      'content-length': Buffer.byteLength(responseBody),
       'cache-control': 'no-store, private, must-revalidate',
       'x-source-location': cleanupHeaderValue(sourceUrl),
       'content-encoding': 'gzip',
@@ -255,14 +335,15 @@ async function run(request, ctx) {
     if (e instanceof ConstraintsError) {
       return error(ctx, `error fetching resource at ${sourceUrl}: ${e.message}`, 400);
     }
-    if (e instanceof SizeTooLargeException) {
-      return error(ctx, `error fetching resource at ${sourceUrl}: ${e.message}`, 409);
+    if (e instanceof ImageUploadError) {
+      const message = createUploadErrorMessage(e.errors);
+      return error(ctx, `error fetching resource at ${sourceUrl}: ${message}`, 409);
     }
     /* c8 ignore next 3 */
     log.debug(e.stack);
     return error(ctx, `error fetching resource at ${sourceUrl}: ${e.message}`, 500);
   } finally {
-    await mediaHandler?.fetchContext.reset();
+    await mediaHandler.fetchContext.reset();
   }
 }
 

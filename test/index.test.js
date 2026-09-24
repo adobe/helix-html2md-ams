@@ -38,7 +38,7 @@ async function loadFixture(filename) {
 }
 
 const DUMMY_ENV = {
-  MEDIAHANDLER_NOCACHHE: true,
+  MEDIAHANDLER_NOCACHE: true,
   AWS_PROFILE: 'dummy',
   AWS_REGION,
   AWS_ACCESS_KEY_ID: 'dummy',
@@ -49,6 +49,24 @@ const DUMMY_ENV = {
   HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
   HLX_PROD_SERVER_HOST_PAGE,
 };
+
+function createRequest(body = {}) {
+  return new Request('https://www.example.com/', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer 1234',
+      'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      org: 'owner',
+      site: 'repo',
+      sourceUrl: 'https://www.example.com/',
+      contentBusId: 'foo-id',
+      ...body,
+    }),
+  });
+}
 
 describe('Index Tests', () => {
   let nock;
@@ -63,6 +81,7 @@ describe('Index Tests', () => {
       AWS_S3_ACCESS_KEY_ID: 'dummy',
       AWS_S3_SECRET_ACCESS_KEY: 'dummy',
       HELIX_MEDIA_HANDLER_DISABLE_R2: 'true',
+      MEDIAHANDLER_NOCACHE: 'true',
     });
   });
 
@@ -147,17 +166,26 @@ describe('Index Tests', () => {
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
 
-        const uncompressed = await uncompress(result);
-        assert.strictEqual(uncompressed, expected.trim());
-        // content-length is a gzip byte count that varies with the
-        // env-injected HLX_PROD_SERVER_HOST_PAGE embedded in image URLs;
-        // body correctness is already asserted above via uncompress().
-        const respHeaders = result.headers.plain();
-        delete respHeaders['content-length'];
-        assert.deepStrictEqual(respHeaders, {
+        const body = await uncompress(result);
+        assert.strictEqual(body.markdown.trim(), expected.trim());
+        assert.deepStrictEqual(body.media, [
+          {
+            uri: `https://main--repo--owner.${HLX_PROD_SERVER_HOST_PAGE}/media_1c2e2c6c049ccf4b583431e14919687f3a39cc227.png#width=300&height=300`,
+            hash: '1c2e2c6c049ccf4b583431e14919687f3a39cc227',
+            contentType: 'image/png',
+            width: '300',
+            height: '300',
+            uploaded: true,
+            // ignore since it depends on the order in process-images
+            originalUri: body.media[0].originalUri,
+          },
+        ]);
+        const resHeaders = result.headers.plain();
+        assert.deepStrictEqual(resHeaders, {
           'cache-control': 'no-store, private, must-revalidate',
           'content-encoding': 'gzip',
-          'content-type': 'text/markdown; charset=utf-8',
+          'content-length': resHeaders['content-length'],
+          'content-type': 'application/json; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
         });
@@ -220,17 +248,26 @@ describe('Index Tests', () => {
         const result = await main(reqUrl('/blog/article', { headers }), { log: console, env: DUMMY_ENV });
         assert.strictEqual(result.status, 200);
 
-        const uncompressed = await uncompress(result);
-        assert.strictEqual(uncompressed, expected.trim());
-        // content-length is a gzip byte count that varies with the
-        // env-injected HLX_PROD_SERVER_HOST_PAGE embedded in image URLs;
-        // body correctness is already asserted above via uncompress().
-        const respHeaders = result.headers.plain();
-        delete respHeaders['content-length'];
-        assert.deepStrictEqual(respHeaders, {
+        const body = await uncompress(result);
+        assert.strictEqual(body.markdown.trim(), expected.trim());
+        assert.deepStrictEqual(body.media, [
+          {
+            uri: `https://main--repo--owner.${HLX_PROD_SERVER_HOST_PAGE}/media_1c2e2c6c049ccf4b583431e14919687f3a39cc227.png#width=300&height=300`,
+            hash: '1c2e2c6c049ccf4b583431e14919687f3a39cc227',
+            contentType: 'image/png',
+            width: '300',
+            height: '300',
+            uploaded: true,
+            // ignore since it depends on the order in process-images
+            originalUri: body.media[0].originalUri,
+          },
+        ]);
+        const resHeaders = result.headers.plain();
+        assert.deepStrictEqual(resHeaders, {
           'cache-control': 'no-store, private, must-revalidate',
           'content-encoding': 'gzip',
-          'content-type': 'text/markdown; charset=utf-8',
+          'content-length': resHeaders['content-length'],
+          'content-type': 'application/json; charset=utf-8',
           'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
           'x-source-location': 'https://www.example.com/blog/article',
         });
@@ -264,13 +301,14 @@ describe('Index Tests', () => {
     );
     assert.strictEqual(result.status, 200);
 
-    const uncompressed = await uncompress(result);
-    assert.strictEqual(uncompressed, expected.trim());
+    const body = await uncompress(result);
+    assert.strictEqual(body.markdown.trim(), expected.trim());
+    assert.deepStrictEqual(body.media, []);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '157',
-      'content-type': 'text/markdown; charset=utf-8',
+      'content-length': '190',
+      'content-type': 'application/json; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
       'x-source-location': 'https://www.example.com/',
     });
@@ -297,6 +335,58 @@ describe('Index Tests', () => {
     });
   }
 
+  it('respect the explicit and implicit external url prefixes', async () => {
+    nock('https://www.example.com', {
+      reqheaders: {
+        authorization: 'Bearer 1234',
+        'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+      },
+    })
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'external-images.html'), {
+        'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
+      });
+    const expected = await readFile(resolve(__testdir, 'fixtures', 'external-images.md'), 'utf-8');
+    const result = await main(
+      new Request('https://localhost', {
+        method: 'POST',
+        body: JSON.stringify({
+          org: 'owner',
+          site: 'repo',
+          sourceUrl: 'https://www.example.com/',
+          contentBusId: 'foo-id',
+          features: {
+            externalImageUrlPrefixes: [
+              'https://images.dummy.com/',
+            ],
+          },
+        }),
+        headers: {
+          authorization: 'Bearer 1234',
+          'content-type': 'application/json',
+          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
+        },
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    assert.strictEqual(result.status, 200);
+
+    const body = await uncompress(result);
+    assert.strictEqual(body.markdown.trim(), expected.trim());
+    assert.deepStrictEqual(body.media, []);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '346',
+      'content-type': 'application/json; charset=utf-8',
+      'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
+      'x-source-location': 'https://www.example.com/',
+    });
+  });
+
   it('returns 200 for a simple html (with unspread feature)', async () => {
     nock('https://www.example.com', {
       reqheaders: {
@@ -310,22 +400,10 @@ describe('Index Tests', () => {
       });
     const expected = await readFile(resolve(__testdir, 'fixtures', 'unspread.md'), 'utf-8');
     const result = await main(
-      new Request('https://example.org/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
+      createRequest({
+        features: {
+          unspreadLists: true,
         },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-          features: {
-            unspreadLists: true,
-          },
-        }),
       }),
       {
         log: console,
@@ -334,13 +412,14 @@ describe('Index Tests', () => {
     );
     assert.strictEqual(result.status, 200);
 
-    const uncompressed = await uncompress(result);
-    assert.strictEqual(uncompressed, expected.trim());
+    const body = await uncompress(result);
+    assert.strictEqual(body.markdown.trim(), expected.trim());
+    assert.deepStrictEqual(body.media, []);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '406',
-      'content-type': 'text/markdown; charset=utf-8',
+      'content-length': '456',
+      'content-type': 'application/json; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
       'x-source-location': 'https://www.example.com/',
     });
@@ -426,22 +505,10 @@ describe('Index Tests', () => {
       .reply(200, html);
 
     const result = await main(
-      new Request('https://www.example.com/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
+      createRequest({
+        limits: {
+          maxImages: 250,
         },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-          limits: {
-            maxImages: 250,
-          },
-        }),
       }),
       {
         log: console,
@@ -457,41 +524,28 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(headers, {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-type': 'text/markdown; charset=utf-8',
+      'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
   });
 
-  it('return 409 for large image', async () => {
+  it('returns 409 for large image', async () => {
+    const size = 21 * 1024 * 1024;
+    const hash = '13bbd992451d38da371304dc2915235eea710c0c7';
+
     nock('https://www.example.com')
       .get('/')
       .replyWithFile(200, resolve(__testdir, 'fixtures', 'image-large.html'), {})
       .get('/large.png')
-      .reply(200, Buffer.alloc(21 * 1025 * 1024), {
+      .reply(200, Buffer.alloc(size), {
         'content-type': 'image/png',
-        'content-length': 21 * 1024 * 1240,
+        'content-length': size,
       });
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head(`/foo-id/${hash}`)
+      .reply(404);
 
-    const result = await main(
-      new Request('https://www.example.com/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-        }),
-      }),
-      {
-        log: console,
-        env: DUMMY_ENV,
-      },
-    );
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
     assert.strictEqual(result.status, 409);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -500,41 +554,30 @@ describe('Index Tests', () => {
     });
   });
 
-  it('return 409 for several large images', async () => {
+  it('returns 409 for several large images', async () => {
+    const sizes = [24 * 1024 * 1024, 25 * 1024 * 1024];
+    const hashes = ['1ed5bc62d0131875756fa12d396f3f9cf112c89ea', '120b6669c77e35fb2ad9563a4a048701b43948bd3'];
+
     nock('https://www.example.com')
       .get('/')
       .replyWithFile(200, resolve(__testdir, 'fixtures', 'images-large.html'), {})
       .get('/large.png')
-      .reply(200, Buffer.alloc(25 * 1025 * 1024), {
+      .reply(200, Buffer.alloc(sizes[0]), {
         'content-type': 'image/png',
-        'content-length': 25 * 1024 * 1240,
+        'content-length': sizes[0],
       })
       .get('/large1.png')
-      .reply(200, Buffer.alloc(24 * 1025 * 1024), {
+      .reply(200, Buffer.alloc(sizes[1]), {
         'content-type': 'image/png',
-        'content-length': 24 * 1024 * 1240,
+        'content-length': sizes[1],
       });
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head(`/foo-id/${hashes[0]}`)
+      .reply(404)
+      .head(`/foo-id/${hashes[1]}`)
+      .reply(404);
 
-    const result = await main(
-      new Request('https://www.example.com/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-        }),
-      }),
-      {
-        log: console,
-        env: DUMMY_ENV,
-      },
-    );
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
     assert.strictEqual(result.status, 409);
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
@@ -543,20 +586,183 @@ describe('Index Tests', () => {
     });
   });
 
-  it('honors maxImageSize limit', async () => {
-    nock(`https://my-media-bus.s3.${AWS_REGION}.amazonaws.com`)
-      .head('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3')
+  it('returns 409 for large svg', async () => {
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'svg.html'), {})
+      .get('/icon.svg')
+      .reply(200, Buffer.alloc(1024 * 1024), {
+        'content-type': 'image/svg+xml',
+        'content-length': 1024 * 1024,
+      });
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head('/foo-id/15c7644179be820f5d8ffff9703acca24d76e2a1e')
+      .reply(404);
+
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
+    assert.strictEqual(result.status, 409);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error fetching resource at https://www.example.com/: Image 1 failed validation: SVG is larger than 40KB: 1.0MB',
+    });
+  });
+
+  it('honors maxSVGSize limit', async () => {
+    const svg = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="red"/><!-- ${'x'.repeat(1_000_000)} -->
+</svg>`);
+    assert.strictEqual(svg.length, 1000155);
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head('/foo-id/1e64a18c490e4a547d3b09933b98c018fa0a3195c')
       .reply(404)
-      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=1&x-id=UploadPart')
-      .reply(201)
-      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=2&x-id=UploadPart')
-      .reply(201)
-      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=3&x-id=UploadPart')
-      .reply(201)
-      .put('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?partNumber=4&x-id=UploadPart')
-      .reply(201)
-      .post('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3?uploads=')
+      .put('/foo-id/1e64a18c490e4a547d3b09933b98c018fa0a3195c?x-id=PutObject')
       .reply(201);
+
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'svg.html'), {})
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const result = await main(
+      createRequest({
+        limits: {
+          maxSVGSize: 5 * 1024 * 1024,
+        },
+      }),
+      {
+        log: console,
+        env: DUMMY_ENV,
+      },
+    );
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '597',
+      'content-type': 'application/json; charset=utf-8',
+      'x-source-location': 'https://www.example.com/',
+    });
+  });
+
+  it('rejects invalid SVG', async () => {
+    const svg = Buffer.from('<xml xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00"/></xml>');
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head('/foo-id/199c601995c217244407df21d6a1d71b0e83f3ffb')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'svg.html'), {})
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
+    assert.strictEqual(result.status, 409);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error fetching resource at https://www.example.com/: Image 1 failed validation: Expected XML content with an SVG root item',
+    });
+  });
+
+  it('accepts valid SVG', async () => {
+    const svg = Buffer.from(`<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="red"/>
+</svg>`);
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head('/foo-id/17d55a1d5a57e8fcee802eec435599147fc0935dc')
+      .reply(404)
+      .put('/foo-id/17d55a1d5a57e8fcee802eec435599147fc0935dc?x-id=PutObject')
+      .reply(201);
+
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'svg.html'), {})
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      });
+
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
+    assert.strictEqual(result.status, 200);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-encoding': 'gzip',
+      'content-length': '597',
+      'content-type': 'application/json; charset=utf-8',
+      'x-source-location': 'https://www.example.com/',
+    });
+  });
+
+  it('rejects invalid SVG, large image and ignores non image', async () => {
+    const svg = Buffer.from('<xml xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="24" style="stroke:#006600; fill:#00cc00"/></xml>');
+    nock(`https://helix-media-bus-${HELIX_BUCKET_SUFFIX}.s3.${AWS_REGION}.amazonaws.com`)
+      .head('/foo-id/199c601995c217244407df21d6a1d71b0e83f3ffb')
+      .reply(404)
+      .head('/foo-id/1234dea2862775a45dbc9311cff50ae57eba56eba')
+      .reply(404)
+      .head('/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3')
+      .reply(404);
+
+    nock('https://www.example.com')
+      .get('/')
+      .replyWithFile(200, resolve(__testdir, 'fixtures', 'svg-mix.html'), {})
+      .get('/icon.svg')
+      .reply(200, svg, {
+        'content-type': 'image/svg+xml',
+        'content-length': svg.length,
+      })
+      .get('/icon.txt')
+      .reply(200, 'hello, world!', {
+        'content-type': 'text/plain; charset=utf-8',
+      })
+      .get('/icon.png')
+      .reply(200, Buffer.alloc(25 * 1024 * 1024), {
+        'content-type': 'image/png',
+        'content-length': 25 * 1024 * 1024,
+      });
+
+    const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
+    assert.strictEqual(result.status, 409);
+    assert.deepStrictEqual(result.headers.plain(), {
+      'cache-control': 'no-store, private, must-revalidate',
+      'content-type': 'text/plain; charset=utf-8',
+      'x-error': 'error fetching resource at https://www.example.com/: Images 1 and 3 have failed validation.',
+    });
+  });
+
+  it('honors maxImageSize limit', async () => {
+    const blobKey = '/foo-id/120b6669c77e35fb2ad9563a4a048701b43948bd3';
+    nock(`https://my-media-bus.s3.${AWS_REGION}.amazonaws.com`)
+      .head(blobKey)
+      .reply(404)
+      .post(blobKey)
+      .query({ uploads: '' })
+      .reply(200, `<?xml version="1.0" encoding="UTF-8"?>
+        <InitiateMultipartUploadResult>
+          <UploadId>test-upload-id</UploadId>
+        </InitiateMultipartUploadResult>`)
+      .put(blobKey)
+      .query(true)
+      .times(5)
+      .reply(200, '', { ETag: '"test-etag"' })
+      .post(blobKey)
+      .query(true)
+      .reply(200, `<?xml version="1.0" encoding="UTF-8"?>
+        <CompleteMultipartUploadResult>
+          <Location>https://my-media-bus.s3.${AWS_REGION}.amazonaws.com${blobKey}</Location>
+        </CompleteMultipartUploadResult>`);
 
     nock('https://www.example.com')
       .get('/')
@@ -564,46 +770,48 @@ describe('Index Tests', () => {
       .get('/large.png')
       .reply(200, Buffer.alloc(25 * 1024 * 1024), {
         'content-type': 'image/png',
-        'content-length': 25 * 1024 * 1240,
+        'content-length': 25 * 1024 * 1024,
       });
 
     const result = await main(
-      new Request('https://www.example.com/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
+      createRequest({
+        limits: {
+          maxImageSize: 30 * 1024 * 1024, // 30mb
         },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-          limits: {
-            maxImageSize: 30 * 1024 * 1024, // 30mb
-          },
-          mediaBucket: 'my-media-bus',
-        }),
+        mediaBucket: 'my-media-bus',
       }),
       {
         log: console,
-        env: DUMMY_ENV,
+        env: {
+          MEDIAHANDLER_DISABLE_EXPECT_CONTINUE: true,
+          ...DUMMY_ENV,
+        },
       },
     );
     const expected = await loadFixture('image-large.md');
-    const uncompressed = await uncompress(result);
+    const body = await uncompress(result);
     assert.strictEqual(result.status, 200);
-    assert.strictEqual(uncompressed, expected.trim());
+    assert.strictEqual(body.markdown.trim(), expected.trim());
+    assert.deepStrictEqual(body.media, [
+      {
+        uri: `https://main--repo--owner.${HLX_PROD_SERVER_HOST_PAGE}/media_120b6669c77e35fb2ad9563a4a048701b43948bd3.png#width=0&height=0`,
+        hash: '120b6669c77e35fb2ad9563a4a048701b43948bd3',
+        contentType: 'image/png',
+        width: '0',
+        height: '0',
+        uploaded: true,
+        originalUri: 'https://www.example.com/large.png',
+      },
+    ]);
     // content-length is a gzip byte count that varies with the env-injected
     // HLX_PROD_SERVER_HOST_PAGE embedded in image URLs; body correctness is
-    // already asserted above via uncompress().
+    // already asserted above.
     const headers = result.headers.plain();
     delete headers['content-length'];
     assert.deepStrictEqual(headers, {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-type': 'text/markdown; charset=utf-8',
+      'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
   });
@@ -629,22 +837,10 @@ describe('Index Tests', () => {
       .reply(200, 'x'.repeat(1024 ** 2 + 1));
 
     const result = await main(
-      new Request('https://www.example.com/', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer 1234',
-          'x-content-source-location': '/content/some-path/index?sig=signature&exp=2024-03-03T10:00:00.000Z',
-          'content-type': 'application/json',
+      createRequest({
+        limits: {
+          maxHTMLSize: 2 * 1024 * 1024, // 2mb
         },
-        body: JSON.stringify({
-          org: 'owner',
-          site: 'repo',
-          sourceUrl: 'https://www.example.com/',
-          contentBusId: 'foo-id',
-          limits: {
-            maxHTMLSize: 2 * 1024 * 1024, // 2mb
-          },
-        }),
       }),
       {
         log: console,
@@ -656,8 +852,8 @@ describe('Index Tests', () => {
     assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '0',
-      'content-type': 'text/markdown; charset=utf-8',
+      'content-length': '26',
+      'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
   });

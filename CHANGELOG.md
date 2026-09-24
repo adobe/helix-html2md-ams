@@ -1,3 +1,183 @@
+## [2.22.19](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.18...v2.22.19) (2026-09-08)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-html2md to v2.2.4 ([#1018](https://github.com/adobe/[secure]-html2md-service/issues/1018)) ([7725055](https://github.com/adobe/[secure]-html2md-service/commit/7725055caaf236e5581d6f03286d42d56a5cf7ab))
+
+## [2.22.18](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.17...v2.22.18) (2026-08-28)
+
+
+### Bug Fixes
+
+* remove unused code ([#1012](https://github.com/adobe/[secure]-html2md-service/issues/1012)) ([2eb0584](https://github.com/adobe/[secure]-html2md-service/commit/2eb0584e4ab11b500a103b7c151f60cf964d12bf))
+
+## [2.22.17](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.16...v2.22.17) (2026-08-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-html2md to v2.2.3 ([#1007](https://github.com/adobe/[secure]-html2md-service/issues/1007)) ([75c9a77](https://github.com/adobe/[secure]-html2md-service/commit/75c9a7789c8dcbe1f814dc35ad0236a5563960dc))
+
+## [2.22.16](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.15...v2.22.16) (2026-08-07)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#1005](https://github.com/adobe/[secure]-html2md-service/issues/1005)) ([59aa177](https://github.com/adobe/[secure]-html2md-service/commit/59aa177272fbb063cdcd05d7350ae9740d21555e))
+
+## [2.22.15](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.14...v2.22.15) (2026-06-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-html2md to v2.2.2 ([#987](https://github.com/adobe/[secure]-html2md-service/issues/987)) ([a627ef2](https://github.com/adobe/[secure]-html2md-service/commit/a627ef2bdbee6ed9a9b3f53f29c74f6ab56b0e01))
+
+## [2.22.14](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.13...v2.22.14) (2026-06-26)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-mediahandler to v3.1.3 ([#983](https://github.com/adobe/[secure]-html2md-service/issues/983)) ([3b8c544](https://github.com/adobe/[secure]-html2md-service/commit/3b8c5449c37008c286ecb3f5a4304c8c8147dfd0))
+
+## [2.22.13](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.12...v2.22.13) (2026-06-09)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes to v2.2.1 ([#977](https://github.com/adobe/[secure]-html2md-service/issues/977)) ([4c48b24](https://github.com/adobe/[secure]-html2md-service/commit/4c48b2408ae9476d7b5148b0ac0375e0e2ab9d2d))
+
+## [2.22.12](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.11...v2.22.12) (2026-06-04)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes to v2.2.7 ([#975](https://github.com/adobe/[secure]-html2md-service/issues/975)) ([4859e4a](https://github.com/adobe/[secure]-html2md-service/commit/4859e4a2a637cc20a420e859effb91f196ba48e8))
+
+## [2.22.11](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.10...v2.22.11) (2026-06-03)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes to v2.2.0 ([#974](https://github.com/adobe/[secure]-html2md-service/issues/974)) ([eceefd8](https://github.com/adobe/[secure]-html2md-service/commit/eceefd882e49bac496b3a8b37dde466b1b0cbc12))
+* do not fetch same site media images ([#973](https://github.com/adobe/[secure]-html2md-service/issues/973)) ([46fce36](https://github.com/adobe/[secure]-html2md-service/commit/46fce36e80fcf42bccd0687d8ba692065ee7c890))
+
+## [2.22.10](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.9...v2.22.10) (2026-05-26)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#971](https://github.com/adobe/[secure]-html2md-service/issues/971)) ([3645968](https://github.com/adobe/[secure]-html2md-service/commit/3645968599a1414efd3b56ba7414e170b5dcf829))
+
+## [2.22.9](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.8...v2.22.9) (2026-05-20)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#966](https://github.com/adobe/[secure]-html2md-service/issues/966)) ([a0a8521](https://github.com/adobe/[secure]-html2md-service/commit/a0a8521d56845d850ff292909eba5c69c941953d))
+
+## [2.22.8](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.7...v2.22.8) (2026-05-19)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#964](https://github.com/adobe/[secure]-html2md-service/issues/964)) ([d054636](https://github.com/adobe/[secure]-html2md-service/commit/d054636d8ea2346fb42c2858fc44a0ea55f1ed0b))
+
+## [2.22.7](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.6...v2.22.7) (2026-04-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-mediahandler to v3.1.2 ([#957](https://github.com/adobe/[secure]-html2md-service/issues/957)) ([eff7212](https://github.com/adobe/[secure]-html2md-service/commit/eff7212b9a3056781f550dba55d1028e78da2e10))
+
+## [2.22.6](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.5...v2.22.6) (2026-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#939](https://github.com/adobe/[secure]-html2md-service/issues/939)) ([fe35225](https://github.com/adobe/[secure]-html2md-service/commit/fe352259954464d140d0254275edcf7e7b202301))
+
+## [2.22.5](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.4...v2.22.5) (2026-04-01)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#935](https://github.com/adobe/[secure]-html2md-service/issues/935)) ([2771e3f](https://github.com/adobe/[secure]-html2md-service/commit/2771e3f19db2eac1cea17f4de3d90dc82aa60058))
+
+## [2.22.4](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.3...v2.22.4) (2026-03-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @adobe/[secure]-mediahandler to v3.1.0 ([#924](https://github.com/adobe/[secure]-html2md-service/issues/924)) ([02af1c1](https://github.com/adobe/[secure]-html2md-service/commit/02af1c1262aa100566af52b4bbd819c4dac682cd))
+
+## [2.22.3](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.2...v2.22.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* use correct limit from payload ([#913](https://github.com/adobe/[secure]-html2md-service/issues/913)) ([3eb35c5](https://github.com/adobe/[secure]-html2md-service/commit/3eb35c5d567f593d367eef9b585ca4b225987661))
+
+## [2.22.2](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.1...v2.22.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* increase default limit ([#912](https://github.com/adobe/[secure]-html2md-service/issues/912)) ([eecab5d](https://github.com/adobe/[secure]-html2md-service/commit/eecab5d800a2684cb2441c7374b7c3b4ec67ca90))
+
+## [2.22.1](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.0...v2.22.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* avoid potential NPE ([#910](https://github.com/adobe/[secure]-html2md-service/issues/910)) ([fd5be63](https://github.com/adobe/[secure]-html2md-service/commit/fd5be63820cf970764e621f80b0428bca963158a))
+* do not rely on instanceof ([#909](https://github.com/adobe/[secure]-html2md-service/issues/909)) ([fc3e804](https://github.com/adobe/[secure]-html2md-service/commit/fc3e804737a4057dff65b651542f61376fe918e2))
+
+# [2.22.0](https://github.com/adobe/[secure]-html2md-service/compare/v2.21.0...v2.22.0) (2026-02-24)
+
+
+### Bug Fixes
+
+* tests ([93608b6](https://github.com/adobe/[secure]-html2md-service/commit/93608b68bddd3cb6ee8233b9500791bb3ea059c4))
+* tests ([#908](https://github.com/adobe/[secure]-html2md-service/issues/908)) ([965321b](https://github.com/adobe/[secure]-html2md-service/commit/965321b0a5730af5c6b5a79dfe8ae48dc7a882c6))
+
+
+### Features
+
+* reject invalid svg ([#902](https://github.com/adobe/[secure]-html2md-service/issues/902)) ([8ad0350](https://github.com/adobe/[secure]-html2md-service/commit/8ad0350a778ff22004cfa579fec7b827d8fb817b))
+
+# [2.21.0](https://github.com/adobe/[secure]-html2md-service/compare/v2.20.4...v2.21.0) (2026-02-17)
+
+
+### Bug Fixes
+
+* post-deploy test to match the new json response from mediahandler ([4d77c19](https://github.com/adobe/[secure]-html2md-service/commit/4d77c19c4a2646ad3b65b49182a280ba4b4ab35f))
+* remove optionality ([884bdab](https://github.com/adobe/[secure]-html2md-service/commit/884bdab7f19105aeb1ae26b8a0b5cdf4fc47dfb9))
+* reverting tests for large images to be 409 ([38f5d48](https://github.com/adobe/[secure]-html2md-service/commit/38f5d487b144ef5ee04b4f342a6a6a657da9bfcf))
+* switch md to markdown ([368087f](https://github.com/adobe/[secure]-html2md-service/commit/368087ffe460f21563072079d09dd2d9e0592fe8))
+* test the entire json response properly ([c22654b](https://github.com/adobe/[secure]-html2md-service/commit/c22654b1c2a41803fbcae7deeda13875e8fedd48))
+* tighter assertions in the test in the same format as before ([0b2700e](https://github.com/adobe/[secure]-html2md-service/commit/0b2700e619138d9077d299fa4e23b7c5ba67fd42))
+* update maxImageSize limit test ([#900](https://github.com/adobe/[secure]-html2md-service/issues/900)) ([df90f9a](https://github.com/adobe/[secure]-html2md-service/commit/df90f9a826d2a1cca8c80cf80b4595b140019d28))
+
+
+### Features
+
+* new json response format with media list in addition to md ([ee9ed68](https://github.com/adobe/[secure]-html2md-service/commit/ee9ed68bf7d37569adc9e258b24204e9c6b70106))
+
+## [2.20.4](https://github.com/adobe/[secure]-html2md-service/compare/v2.20.3...v2.20.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#899](https://github.com/adobe/[secure]-html2md-service/issues/899)) ([659a390](https://github.com/adobe/[secure]-html2md-service/commit/659a390eaaaf406dbc3f9e79e35ff8f2f3f0f416))
+
+## [2.20.3](https://github.com/adobe/[secure]-html2md-service/compare/v2.20.2...v2.20.3) (2026-02-06)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#892](https://github.com/adobe/[secure]-html2md-service/issues/892)) ([06dfd11](https://github.com/adobe/[secure]-html2md-service/commit/06dfd11cbbbdc59f7744d682fac7e8ec1968dfdd))
+
 ## [2.20.2](https://github.com/adobe/[secure]-html2md-service/compare/v2.20.1...v2.20.2) (2026-01-15)
 
 
