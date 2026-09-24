@@ -136,8 +136,8 @@ export function createImgSrcPolicy(baseUrlStr, imgSrcPolicy) {
  */
 export function createImageFilter(ext, org, site) {
   const baseFilter = imageFilterFromPrefixes(ext);
-  const prevSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_PAGE || 'aem.page'}`;
-  const liveSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_LIVE || 'aem.live'}`;
+  const prevSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_PAGE /* c8 ignore next */ || 'aem.page'}`;
+  const liveSuffix = `--${site}--${org}.${process.env.HLX_PROD_SERVER_HOST_LIVE /* c8 ignore next */ || 'aem.live'}`;
   return (href) => {
     try { // check if url is on the same site
       const { hostname, pathname } = new URL(href);
