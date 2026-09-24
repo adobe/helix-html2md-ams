@@ -22,7 +22,16 @@ jobs:
         with:
           node-version: '24.x'
       - run: npm install
+      # AMS templatized code reads HLX_PROD_SERVER_HOST_PAGE/_LIVE and HELIX_BUCKET_SUFFIX
+      # directly; test/setup-env.js falls back to a 'BAD_VAR_...' placeholder when unset,
+      # which then mismatches the real templatized code's own '|| aem.page'-style fallback
+      # and breaks nock mocks. Dummy values only -- real ones aren't needed for unit tests.
       - run: npm test
+        env:
+          HELIX_BUCKET_SUFFIX: test
+          AWS_REGION: us-east-1
+          HLX_PROD_SERVER_HOST_PAGE: aem.page
+          HLX_PROD_SERVER_HOST_LIVE: aem.live
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
