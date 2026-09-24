@@ -4,8 +4,8 @@ HTML to Markdown converter. Transforms HTML content into Markdown for ingestion 
 
 ## Rules
 
-@/Users/schmidt/Documents/git/eds_tools/ams-eds-terraform/.cursor/rules/lambda-development-standards.md
-@/Users/schmidt/Documents/git/eds_tools/ams-eds-terraform/.cursor/rules/development-standards-shared.md
+@../../eds_tools/ams-eds-terraform/.cursor/rules/lambda-development-standards.md
+@../../eds_tools/ams-eds-terraform/.cursor/rules/development-standards-shared.md
 
 ## Stack
 
