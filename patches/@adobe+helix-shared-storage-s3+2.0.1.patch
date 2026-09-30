@@ -1,0 +1,13 @@
+diff --git a/node_modules/@adobe/helix-shared-storage-s3/src/createDefaultBackendFactory.js b/node_modules/@adobe/helix-shared-storage-s3/src/createDefaultBackendFactory.js
+index ef1e548..8c12f30 100644
+--- a/node_modules/@adobe/helix-shared-storage-s3/src/createDefaultBackendFactory.js
++++ b/node_modules/@adobe/helix-shared-storage-s3/src/createDefaultBackendFactory.js
+@@ -96,7 +96,7 @@ export function createBackendFactory({
+   maxAttempts,
+ }, { log = console } = {}) {
+   const baseOpts = {
+-    region: 'us-east-1',
++    region: process.env.AWS_REGION || 'us-east-1',
+     requestHandler: new NodeHttpHandler({
+       httpsAgent: new Agent({ keepAlive }),
+       connectionTimeout,
