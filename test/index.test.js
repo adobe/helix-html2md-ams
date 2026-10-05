@@ -378,12 +378,10 @@ describe('Index Tests', () => {
     const body = await uncompress(result);
     assert.strictEqual(body.markdown.trim(), expected.trim());
     assert.deepStrictEqual(body.media, []);
-    // content-length is a gzip byte count that varies with the env-injected hosts
-    const headers = result.headers.plain();
-    delete headers['content-length'];
-    assert.deepStrictEqual(headers, {
+    assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
+      'content-length': String(Buffer.byteLength(JSON.stringify(body))),
       'content-type': 'application/json; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
       'x-source-location': 'https://www.example.com/',
@@ -519,14 +517,11 @@ describe('Index Tests', () => {
       },
     );
     assert.strictEqual(result.status, 200);
-    // content-length is a gzip byte count that varies with the env-injected
-    // HLX_PROD_SERVER_HOST_PAGE embedded in image URLs; the 250 uploads are
-    // verified by the S3 nock mock above.
-    const headers = result.headers.plain();
-    delete headers['content-length'];
-    assert.deepStrictEqual(headers, {
+    const body = await uncompress(result);
+    assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
+      'content-length': String(Buffer.byteLength(JSON.stringify(body))),
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
@@ -644,12 +639,11 @@ describe('Index Tests', () => {
       },
     );
     assert.strictEqual(result.status, 200);
-    // content-length is a gzip byte count that varies with the env-injected hosts
-    const headers = result.headers.plain();
-    delete headers['content-length'];
-    assert.deepStrictEqual(headers, {
+    const body = await uncompress(result);
+    assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
+      'content-length': String(Buffer.byteLength(JSON.stringify(body))),
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
@@ -701,12 +695,11 @@ describe('Index Tests', () => {
 
     const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
     assert.strictEqual(result.status, 200);
-    // content-length is a gzip byte count that varies with the env-injected hosts
-    const headers = result.headers.plain();
-    delete headers['content-length'];
-    assert.deepStrictEqual(headers, {
+    const body = await uncompress(result);
+    assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
+      'content-length': String(Buffer.byteLength(JSON.stringify(body))),
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
@@ -819,14 +812,10 @@ describe('Index Tests', () => {
         originalUri: 'https://www.example.com/large.png',
       },
     ]);
-    // content-length is a gzip byte count that varies with the env-injected
-    // HLX_PROD_SERVER_HOST_PAGE embedded in image URLs; body correctness is
-    // already asserted above.
-    const headers = result.headers.plain();
-    delete headers['content-length'];
-    assert.deepStrictEqual(headers, {
+    assert.deepStrictEqual(result.headers.plain(), {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
+      'content-length': String(Buffer.byteLength(JSON.stringify(body))),
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
