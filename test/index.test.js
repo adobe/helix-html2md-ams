@@ -17,7 +17,9 @@ import { resolve } from 'path';
 import { Request } from '@adobe/fetch';
 import { main } from '../src/index.js';
 import { Nock, uncompress } from './utils.js';
-import { AWS_REGION, HELIX_BUCKET_SUFFIX, HLX_PROD_SERVER_HOST_PAGE } from './setup-env.js';
+import {
+  AWS_REGION, HELIX_BUCKET_SUFFIX, HLX_PROD_SERVER_HOST_LIVE, HLX_PROD_SERVER_HOST_PAGE,
+} from './setup-env.js';
 
 function reqUrl(path = '/', init = {}) {
   const url = new URL('https://localhost');
@@ -33,8 +35,10 @@ function reqUrl(path = '/', init = {}) {
  */
 async function loadFixture(filename) {
   const content = await readFile(resolve(__testdir, 'fixtures', filename), 'utf-8');
-  // Replace aem.page with the environment-specific domain
-  return content.replace(/aem\.page/g, HLX_PROD_SERVER_HOST_PAGE);
+  // Replace aem.page / aem.live with the environment-specific domains
+  return content
+    .replace(/aem\.page/g, HLX_PROD_SERVER_HOST_PAGE)
+    .replace(/aem\.live/g, HLX_PROD_SERVER_HOST_LIVE);
 }
 
 const DUMMY_ENV = {
@@ -340,10 +344,10 @@ describe('Index Tests', () => {
       },
     })
       .get('/')
-      .replyWithFile(200, resolve(__testdir, 'fixtures', 'external-images.html'), {
+      .reply(200, await loadFixture('external-images.html'), {
         'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
       });
-    const expected = await readFile(resolve(__testdir, 'fixtures', 'external-images.md'), 'utf-8');
+    const expected = await loadFixture('external-images.md');
     const result = await main(
       new Request('https://localhost', {
         method: 'POST',
@@ -374,10 +378,12 @@ describe('Index Tests', () => {
     const body = await uncompress(result);
     assert.strictEqual(body.markdown.trim(), expected.trim());
     assert.deepStrictEqual(body.media, []);
-    assert.deepStrictEqual(result.headers.plain(), {
+    // content-length is a gzip byte count that varies with the env-injected hosts
+    const headers = result.headers.plain();
+    delete headers['content-length'];
+    assert.deepStrictEqual(headers, {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '346',
       'content-type': 'application/json; charset=utf-8',
       'last-modified': 'Sat, 22 Feb 2031 15:28:00 GMT',
       'x-source-location': 'https://www.example.com/',
@@ -638,10 +644,12 @@ describe('Index Tests', () => {
       },
     );
     assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(result.headers.plain(), {
+    // content-length is a gzip byte count that varies with the env-injected hosts
+    const headers = result.headers.plain();
+    delete headers['content-length'];
+    assert.deepStrictEqual(headers, {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '597',
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });
@@ -693,10 +701,12 @@ describe('Index Tests', () => {
 
     const result = await main(createRequest(), { log: console, env: DUMMY_ENV });
     assert.strictEqual(result.status, 200);
-    assert.deepStrictEqual(result.headers.plain(), {
+    // content-length is a gzip byte count that varies with the env-injected hosts
+    const headers = result.headers.plain();
+    delete headers['content-length'];
+    assert.deepStrictEqual(headers, {
       'cache-control': 'no-store, private, must-revalidate',
       'content-encoding': 'gzip',
-      'content-length': '597',
       'content-type': 'application/json; charset=utf-8',
       'x-source-location': 'https://www.example.com/',
     });

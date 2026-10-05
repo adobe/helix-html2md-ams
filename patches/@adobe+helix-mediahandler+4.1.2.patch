@@ -1,0 +1,13 @@
+diff --git a/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js b/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
+index 17154bb..ccb5566 100644
+--- a/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
++++ b/node_modules/@adobe/helix-mediahandler/src/MediaHandler.js
+@@ -782,7 +782,7 @@ export default class MediaHandler {
+     }
+     blob.uri = this._relativeMediaUri
+       ? `./media_${hash}.${ext}${fragment}`
+-      : `https://${ref}--${repo}--${owner}.aem.page/media_${hash}.${ext}${fragment}`;
++      : 'https://' + ref + '--' + repo + '--' + owner + '.' + (process.env.HLX_PROD_SERVER_HOST_PAGE || 'aem.page') + '/media_' + hash + '.' + ext + fragment;
+     return blob;
+   }
+ 
