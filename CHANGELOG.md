@@ -1,3 +1,10 @@
+# [2.23.0](https://github.com/adobe/helix-html2md-service/compare/v2.22.25...v2.23.0) (2026-10-27)
+
+
+### Features
+
+* use shared workflow template ([#1041](https://github.com/adobe/helix-html2md-service/issues/1041)) ([3caadbb](https://github.com/adobe/helix-html2md-service/commit/3caadbb9875885ba7f859adabe965eb5995ceade))
+
 ## [2.22.25](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.24...v2.22.25) (2026-10-27)
 
 
