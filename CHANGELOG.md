@@ -1,3 +1,10 @@
+## [2.22.25](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.24...v2.22.25) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @aws-sdk/lib-storage to v3.1150.0 ([#1043](https://github.com/adobe/[secure]-html2md-service/issues/1043)) ([4dc1f4f](https://github.com/adobe/[secure]-html2md-service/commit/4dc1f4f54c6401592b28febc4dd8c31cb5a8c5e4))
+
 ## [2.22.24](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.23...v2.22.24) (2026-10-21)
 
 
