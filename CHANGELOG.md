@@ -1,3 +1,24 @@
+## [2.23.1](https://github.com/adobe/helix-html2md-service/compare/v2.23.0...v2.23.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update adobe fixes ([#1044](https://github.com/adobe/helix-html2md-service/issues/1044)) ([c8dc76b](https://github.com/adobe/helix-html2md-service/commit/c8dc76bf8beedc00e08dd6f117cf2256ef5779d7))
+
+# [2.23.0](https://github.com/adobe/helix-html2md-service/compare/v2.22.25...v2.23.0) (2026-10-27)
+
+
+### Features
+
+* use shared workflow template ([#1041](https://github.com/adobe/helix-html2md-service/issues/1041)) ([3caadbb](https://github.com/adobe/helix-html2md-service/commit/3caadbb9875885ba7f859adabe965eb5995ceade))
+
+## [2.22.25](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.24...v2.22.25) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @aws-sdk/lib-storage to v3.1150.0 ([#1043](https://github.com/adobe/[secure]-html2md-service/issues/1043)) ([4dc1f4f](https://github.com/adobe/[secure]-html2md-service/commit/4dc1f4f54c6401592b28febc4dd8c31cb5a8c5e4))
+
 ## [2.22.24](https://github.com/adobe/[secure]-html2md-service/compare/v2.22.23...v2.22.24) (2026-10-21)
 
 
