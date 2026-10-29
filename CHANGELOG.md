@@ -1,3 +1,10 @@
+## [2.23.2](https://github.com/adobe/helix-html2md-service/compare/v2.23.1...v2.23.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @aws-sdk/lib-storage to v3.1152.0 ([#1047](https://github.com/adobe/helix-html2md-service/issues/1047)) ([057320e](https://github.com/adobe/helix-html2md-service/commit/057320e9ee8db6d9cd0985a9abbd2da6a62f3b83))
+
 ## [2.23.1](https://github.com/adobe/helix-html2md-service/compare/v2.23.0...v2.23.1) (2026-10-27)
 
 
